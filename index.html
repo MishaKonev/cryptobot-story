@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="CryptoBot: что было и что стало по каждой доработке.">
+<style>body{margin:0} :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>CryptoBot до и после</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: одна колонка под телефон, «лента» фич; у каждой фичи — переключатель Было/Стало и экран Telegram.
+   Единый тёмный вид (ночной трейдинг-терминал), сознательно без светлой темы. */
+:root {
+  color-scheme: dark;
+  --bg: #0B1220;
+  --bg2: #101A2E;
+  --glass: rgba(26, 38, 62, 0.72);
+  --line: #243552;
+  --fg: #EAF0F8;
+  --body: #AFC0D6;
+  --muted: #7D8FA8;
+  --blue: #5AA9FF;
+  --blue2: #2F7DF6;
+  --amber: #F5A524;
+  --up: #27C28A;
+  --down: #FF6B6B;
+  --tg: #17212B;
+  --tgb: #1F2E42;
+  --tgq: #24364F;
+  --tgk: #2B5278;
+  --display: "Unbounded", "Trebuchet MS", system-ui, sans-serif;
+  --text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0; overflow-x: hidden;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+.aura { position: fixed; inset: -20vmax; z-index: -1; pointer-events: none;
+  background: radial-gradient(40vmax 40vmax at 15% 10%, rgba(47,125,246,.22), transparent 60%),
+              radial-gradient(35vmax 35vmax at 90% 40%, rgba(245,165,36,.10), transparent 60%),
+              radial-gradient(45vmax 45vmax at 30% 95%, rgba(39,194,138,.10), transparent 60%);
+  animation: drift 24s ease-in-out infinite alternate; }
+@keyframes drift { to { transform: translate3d(3vmax, -2vmax, 0) rotate(6deg); } }
+.wrap { max-width: 560px; margin: 0 auto; }
+
+/* прогресс прокрутки */
+.progress { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; height: 3px; z-index: 40;
+  background: linear-gradient(90deg, var(--blue2), var(--blue), var(--amber)); transform-origin: 0 50%; transform: scaleX(0); }
+
+/* hero */
+.hero { padding-block: 56px 24px; display: grid; gap: 18px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; color: var(--blue); text-transform: uppercase; }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(36px, 11vw, 56px); line-height: 1.02; margin: 0; text-wrap: balance; }
+h1 .arrow { display: inline-block; color: var(--blue); animation: nudge 2.4s var(--ease) infinite; }
+@keyframes nudge { 0%, 60%, 100% { transform: translateX(0); } 30% { transform: translateX(8px); } }
+.lead { color: var(--body); font-size: 17px; margin: 0; max-width: 34em; }
+.spark { width: 100%; height: 120px; display: block; }
+.spark path.l { stroke-dasharray: 900; stroke-dashoffset: 900; animation: draw 2.2s var(--ease) .2s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.stat { background: var(--glass); border: 1px solid var(--line); border-radius: 18px; padding: 14px 12px; backdrop-filter: blur(10px); }
+.stat b { display: block; font-family: var(--display); font-size: 26px; font-weight: 700; color: var(--blue); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12.5px; color: var(--body); line-height: 1.3; display: block; }
+.stat.warm b { color: var(--amber); }
+.toc { display: flex; flex-wrap: wrap; gap: 8px; }
+.toc a { font-size: 13px; color: var(--fg); text-decoration: none; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--bg2); transition: border-color .2s, transform .2s; }
+.toc a:active { transform: scale(.96); }
+.toc a:focus-visible, button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* фичи */
+.feature { padding-block: 40px 8px; display: grid; gap: 14px; scroll-margin-top: 16px; }
+.feature .num { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .1em; }
+h2 { font-family: var(--display); font-weight: 700; font-size: clamp(24px, 7vw, 32px); line-height: 1.12; margin: 0; text-wrap: balance; }
+.why { color: var(--body); margin: 0; }
+.seg { position: relative; display: none; grid-template-columns: 1fr 1fr; background: var(--bg2); border: 1px solid var(--line);
+  border-radius: 14px; padding: 4px; width: 100%; max-width: 320px; }
+.seg button { position: relative; z-index: 1; border: 0; background: none; color: var(--muted); font: 600 14px var(--text);
+  padding: 9px 0; border-radius: 10px; cursor: pointer; transition: color .3s; }
+.seg button[aria-pressed="true"] { color: #0B1220; }
+.seg .pill { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: 10px;
+  background: var(--blue); transition: transform .45s var(--ease), background .45s; }
+.seg[data-state="before"] .pill { transform: translateX(0); background: var(--amber); }
+.seg[data-state="after"] .pill { transform: translateX(100%); }
+.stage { position: relative; }
+.pane { transition: opacity .45s var(--ease), transform .55s var(--ease), filter .45s; }
+.pane[hidden] { display: none !important; }
+.pane.enter { animation: paneIn .55s var(--ease) both; }
+@keyframes paneIn { from { opacity: 0; transform: translateY(14px) scale(.97); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+.verdict { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; color: var(--body); }
+.tag { flex: none; font: 700 11px var(--mono); letter-spacing: .08em; padding: 4px 8px; border-radius: 8px; }
+.tag.b { background: rgba(245,165,36,.16); color: var(--amber); }
+.tag.a { background: rgba(90,169,255,.16); color: var(--blue); }
+
+/* экран Telegram */
+.phone { background: var(--tg); border: 1px solid var(--line); border-radius: 26px; padding: 14px; display: grid; gap: 8px;
+  box-shadow: 0 30px 60px -30px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.04); overflow: hidden; }
+.phone.glow { animation: glow 2.4s ease-out 1; }
+@keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(90,169,255,.0); } 30% { box-shadow: 0 0 0 6px rgba(90,169,255,.25); } 100% { box-shadow: 0 30px 60px -30px rgba(0,0,0,.6); } }
+.msg { background: var(--tgb); border-radius: 16px 16px 16px 6px; padding: 9px 12px; font-size: 14.5px; line-height: 1.38;
+  max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+.msg p { margin: 0; }
+.msg .dim { color: #8193AA; }
+.msg b { color: #fff; }
+.msg code { font-family: var(--mono); font-size: 13.5px; color: #8CC4FF; }
+.msg .ok { color: var(--up); }
+.msg .bad { color: var(--down); }
+.msg .state { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #33465F; color: #CFE0F3; }
+.chart { height: 92px; border-radius: 12px 12px 4px 4px; margin: -9px -12px 8px; overflow: hidden; background: #121B28; }
+.chart svg { width: 100%; height: 100%; display: block; }
+.quote { border-left: 3px solid var(--blue); background: var(--tgq); border-radius: 6px; padding: 4px 8px; margin-bottom: 6px;
+  font-size: 13px; color: #8CC4FF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kb { display: grid; gap: 6px; }
+.kb .row { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+.kb button { border: 0; background: var(--tgk); color: #EEF3F9; border-radius: 10px; padding: 9px 6px; font: 600 13.5px var(--text);
+  cursor: pointer; transition: transform .15s, background .2s; }
+.kb button:active { transform: scale(.96); }
+.kb button.static { cursor: default; }
+.toast { justify-self: center; font-size: 12.5px; background: rgba(0,0,0,.55); color: #fff; border-radius: 12px; padding: 7px 12px;
+  animation: toast 2.6s var(--ease) forwards; }
+@keyframes toast { 0% { opacity: 0; transform: translateY(8px); } 12%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+.pop { animation: pop .5s var(--ease) both; }
+@keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
+.typing { display: inline-flex; gap: 4px; padding: 10px 12px; background: var(--tgb); border-radius: 16px; justify-self: start; }
+.typing i { width: 6px; height: 6px; border-radius: 50%; background: #8193AA; animation: blink 1s infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+
+/* цепочка ответов: «перетекающая» линия */
+.thread { position: relative; padding-left: 18px; display: grid; gap: 8px; }
+.thread::before { content: ""; position: absolute; left: 5px; top: 10px; bottom: 10px; width: 3px; border-radius: 3px;
+  background: linear-gradient(180deg, var(--blue2), var(--blue), var(--amber), var(--blue2)); background-size: 100% 300%;
+  animation: flow 3s linear infinite; transform-origin: top; }
+@keyframes flow { to { background-position: 0 -300%; } }
+.replay { justify-self: start; border: 1px solid var(--line); background: var(--bg2); color: var(--fg); border-radius: 999px;
+  padding: 8px 14px; font: 600 13px var(--text); cursor: pointer; }
+
+/* сравнения */
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.card { background: var(--glass); border: 1px solid var(--line); border-radius: 18px; padding: 14px; display: grid; gap: 6px; min-width: 0; }
+.card h3 { margin: 0; font-family: var(--display); font-size: 15px; font-weight: 700; }
+.card p { margin: 0; color: var(--body); font-size: 13.5px; }
+.card.hot { border-color: rgba(90,169,255,.55); }
+
+/* честные цифры */
+.ci { position: relative; height: 120px; border-radius: 16px; background: var(--bg2); border: 1px solid var(--line); overflow: hidden; }
+.ci .zero { position: absolute; top: 10px; bottom: 26px; left: 50%; border-left: 2px dashed #5B6C85; }
+.ci .bar { position: absolute; height: 18px; border-radius: 9px; transform-origin: center; }
+.ci .bar.b1 { top: 22px; left: 38%; width: 33%; background: var(--amber); }
+.ci .bar.b2 { top: 62px; left: 56%; width: 33%; background: var(--blue); }
+.ci.play .bar { animation: grow .9s var(--ease) both; }
+.ci.play .bar.b2 { animation-delay: .35s; }
+@keyframes grow { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+.ci .lbl { position: absolute; font-size: 11.5px; color: var(--body); font-family: var(--mono); }
+
+/* CI-конвейер */
+.pipe { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; position: relative; }
+.pipe .st { text-align: center; font-size: 12px; color: var(--body); background: var(--bg2); border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 4px; transition: border-color .3s, color .3s, background .3s; }
+.pipe .st.on { border-color: var(--up); color: #DFFFF1; background: rgba(39,194,138,.12); }
+.pipe .st b { display: block; font-size: 18px; }
+
+/* путь обучения */
+.path { display: grid; gap: 10px; position: relative; padding-left: 26px; }
+.path::before { content: ""; position: absolute; left: 9px; top: 6px; bottom: 6px; width: 2px; background: var(--line); }
+.path .dot { position: absolute; left: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--blue);
+  box-shadow: 0 0 14px var(--blue); animation: travel 4s var(--ease) infinite; }
+@keyframes travel { 0% { top: 0; } 100% { top: calc(100% - 12px); } }
+.path .card { position: relative; }
+
+.cta { margin-block: 40px 56px; background: var(--amber); color: #1B1406; border-radius: 24px; padding: 22px 18px; display: grid; gap: 10px; }
+.cta h2 { color: #1B1406; }
+.cta ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-weight: 500; }
+.cta code { font-family: var(--mono); font-size: 13px; background: rgba(27,20,6,.12); padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+footer { color: var(--muted); font-size: 12.5px; text-align: center; padding-bottom: 40px; }
+
+.js .seg { display: grid; }
+.chart { display: none; }
+.js .chart { display: block; }
+.js .nojs { display: none; }
+.nojs { font-size: 13px; color: var(--amber); margin: 0; }
+.kb a { display: block; text-align: center; text-decoration: none; background: var(--tgk); color: #EEF3F9; border-radius: 10px; padding: 9px 6px; font: 600 13.5px var(--text); }
+.kb a:active { transform: scale(.96); }
+/* появление при прокрутке: состояние покоя видимое; анимация — только по классу от скрипта */
+.reveal.go { animation: rise .8s var(--ease) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(26px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .45s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .spark path.l { stroke-dashoffset: 0; }
+}
+</style>
+<script>document.documentElement.classList.add("js")</script>
+</head>
+<body>
+
+<div class="aura" aria-hidden="true"></div>
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<main class="wrap">
+  <header class="hero reveal">
+    <span class="eyebrow">21 ноября 2026 · один день работы</span>
+    <h1>CryptoBot<br>было <span class="arrow">→</span> стало</h1>
+    <p class="lead">Бот для ручной торговли с телефона стал понятнее: каждое сообщение читается за 3–5 секунд, а цифры теперь честные. Переключай «Было / Стало» у каждого пункта.</p>
+    <svg class="spark" viewBox="0 0 400 120" aria-hidden="true">
+      <defs><linearGradient id="sg" x1="0" x2="1"><stop offset="0" stop-color="#5AA9FF" stop-opacity="0"/><stop offset="1" stop-color="#5AA9FF"/></linearGradient></defs>
+      <path class="l" d="M0 96 L40 88 L70 92 L105 70 L130 78 L165 58 L190 64 L230 40 L255 48 L290 30 L320 36 L360 14 L400 8" fill="none" stroke="url(#sg)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="stats">
+      <div class="stat"><b data-count="22">22</b><span>доработки, каждая в своей ветке</span></div>
+      <div class="stat"><b><span data-count="105">105</span>→<span data-count="165">165</span></b><span>тестов, CI на каждый push</span></div>
+      <div class="stat warm"><b data-count="0">0</b><span>изменений в торговой логике</span></div>
+    </div>
+    <nav class="toc" aria-label="Пункты">
+      <a href="#card">Карточка</a><a href="#thread">Ответы</a><a href="#buttons">Кнопки</a><a href="#events">События</a>
+      <a href="#stop">Стоп</a><a href="#daily">Итог дня</a><a href="#chart">График</a><a href="#market">По рынку</a>
+      <a href="#honest">Честные цифры</a><a href="#reliable">Надёжность</a><a href="#learning">Обучение</a>
+    </nav>
+  </header>
+
+  <!-- 1. Карточка -->
+  <section class="feature reveal" id="card" data-auto>
+    <span class="num">01 · КАРТОЧКА СДЕЛКИ</span>
+    <h2>14 строк → 6, деньги рядом с тейком и стопом</h2>
+    <div class="seg" role="group" aria-label="Было или стало" data-state="after"><span class="pill"></span>
+      <button type="button" data-show="before" aria-pressed="false">Было</button><button type="button" data-show="after" aria-pressed="true">Стало</button></div>
+    <div class="stage">
+      <div class="pane" data-pane="before">
+        <div class="phone"><div class="msg">
+          <p>🔔 Авто</p><p><b>🔴 ШОРТ · DOGEUSDT · свинг</b></p><p class="dim">━━━━━━━━━━━━</p>
+          <p>Вход <code>0.05531</code></p><p>Тейк <code>0.04950</code> −10.5%</p><p>Стоп <code>0.05779</code> +4.5%</p>
+          <p class="dim">━━━━━━━━━━━━</p><p>Плечо 5x · маржа 10.00 USDT · позиция 50.00 USDT</p>
+          <p>Профит при тейке +52% (+5.20 USDT)</p><p>Убыток при стопе −23% (−2.30 USDT)</p><p>Ликвидация ≈ 0.06581</p>
+          <p class="dim">━━━━━━━━━━━━</p><p>Уверенность 61/100 (нужно ≥ 47)</p><p>⏳ Лимитка до 21.11 20:55 · держать до 27.11</p>
+        </div></div>
+        <p class="verdict"><span class="tag b">БЫЛО</span>Чтобы найти главное, нужно читать всё. У шорта тейк «−10.5%» выглядел как убыток.</p>
+      </div>
+      <div class="pane" data-pane="after">
+        <div class="phone"><div class="msg">
+          <div class="chart" data-chart="short"></div>
+          <p><b>🔴 DOGEUSDT · ШОРТ · №2 · свинг</b></p>
+          <p>Вход: <code>0.05523</code></p><p>Тейк: <code>0.04943</code> · <span class="ok">+5.23 USDT</span></p>
+          <p>Стоп: <code>0.05771</code> · <span class="bad">−2.29 USDT</span></p><p>Маржа 10 USDT · 5×</p>
+          <p>⏱ Лимитка до 22.11 19:33 (Киев) · держать до 27.11</p>
+        </div>
+        <div class="kb"><div class="row"><a href="#buttons">📥 Поставил лимитку</a><a href="#buttons">⚡ Вошёл по рынку</a></div>
+          <div class="row"><a href="#buttons">🚫 Пропустил</a></div></div></div>
+        <p class="verdict"><span class="tag a">СТАЛО</span>Сторона и монета первой строкой, сумма в USDT рядом с ценой. Цены копируются в Binance одним нажатием.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Ответы -->
+  <section class="feature reveal" id="thread">
+    <span class="num">02 · ВСЁ ПО СДЕЛКЕ — В ОДНОЙ ВЕТКЕ</span>
+    <h2>События отвечают на свою карточку</h2>
+    <p class="why">Было: «тейк», «стоп», «вход» приходили отдельными сообщениями, и при трёх открытых сделках было непонятно, что к чему. Стало: каждое событие — ответ на карточку, нажал на цитату и попал к сделке.</p>
+    <div class="phone"><div class="thread" id="threadBox" aria-live="polite"><div class="msg"><p><b>🟢 BTCUSDT · ЛОНГ · №1</b></p><p>Вход: <code>59852.5</code></p><p>Тейк: <code>60660.5</code> · <span class="ok">+2.03 USDT</span></p><p>Стоп: <code>59313.8</code> · <span class="bad">−1.56 USDT</span></p></div>
+      <div class="msg"><div class="quote">🟢 BTCUSDT · ЛОНГ · №1 · Вход: 59852.5</div><p>🔵 <b>BTCUSDT</b> · №1</p><p>Цена достигла входа <code>59852.5</code>.</p><p>Вы уже в сделке.</p></div>
+      <div class="msg"><div class="quote">🟢 BTCUSDT · ЛОНГ · №1 · Вход: 59852.5</div><p>❌ <b>BTCUSDT</b> · №1 · Стоп</p><p><b class="bad">−1.48 USDT</b> · 7 ч</p><p>Цена прошла 80% пути к тейку и развернулась.</p></div></div></div>
+    <button class="replay" type="button" id="replayThread">↻ Проиграть ещё раз</button>
+  </section>
+
+  <!-- 3. Кнопки -->
+  <section class="feature reveal" id="buttons">
+    <span class="num">03 · КНОПКИ С ПРОДОЛЖЕНИЕМ</span>
+    <h2>Бот знает, что ты сделал на самом деле</h2>
+    <p class="why">Было: кнопок не было, бот не знал, вошёл ли человек. Стало: отметки с продолжением, у каждого свои. Ордеров бот не отправляет. Попробуй сам ↓</p>
+    <div class="phone" id="demo"><div class="msg"><p><b>🟢 BTCUSDT · ЛОНГ · №1</b></p><p>Вход: <code>59852.5</code></p><p>Тейк: <code>60660.5</code> · <span class="ok">+2.03 USDT</span></p><p>Стоп: <code>59313.8</code> · <span class="bad">−1.56 USDT</span></p></div>
+      <p class="nojs">Кнопки нажимаются, если открыть страницу по ссылке в браузере (Safari/Chrome), а не как файл.</p></div>
+    <button class="replay" type="button" id="resetDemo">↻ Сначала</button>
+  </section>
+
+  <!-- 4. События -->
+  <section class="feature reveal" id="events" data-auto>
+    <span class="num">04 · СОБЫТИЯ ДЛЯ ТЕБЯ</span>
+    <h2>«Вход исполнен» → «подтверди» или «виртуально»</h2>
+    <div class="seg" role="group" aria-label="Было или стало" data-state="after"><span class="pill"></span>
+      <button type="button" data-show="before" aria-pressed="false">Было</button><button type="button" data-show="after" aria-pressed="true">Стало</button></div>
+    <div class="stage">
+      <div class="pane" data-pane="before">
+        <div class="phone"><div class="msg"><p>🔵 <b>Вход исполнен</b></p><p>BTCUSDT лонг · сигнал · №1</p><p>вход 59852.5 · стоп 59313.8 · тейк 60660.5</p><p>исполнена 20.11 20:49</p></div></div>
+        <p class="verdict"><span class="tag b">БЫЛО</span>Звучало как факт про твою биржу, хотя бот её не видит. Всем одинаково.</p>
+      </div>
+      <div class="pane" data-pane="after">
+        <div class="phone">
+          <div class="msg"><div class="quote">🟢 BTCUSDT · ЛОНГ · №1 · Вход: 59852.5</div><p>🔵 <b>BTCUSDT</b> · №1</p><p>Цена достигла входа <code>59852.5</code>.</p><p>Подтверди исполнение заявки на бирже.</p></div>
+          <div class="kb"><div class="row"><a href="#buttons">✅ Исполнилась</a><a href="#buttons">🚫 Не исполнилась</a></div></div>
+          <div class="msg"><div class="quote">🔴 DOGEUSDT · ШОРТ · №2 · свинг</div><p>🔵 <b>DOGEUSDT</b> · №2</p><p>Цена достигла входа <code>0.05523</code>.</p><p>Виртуальный вход зафиксирован.</p></div>
+        </div>
+        <p class="verdict"><span class="tag a">СТАЛО</span>Поставил лимитку — бот просит подтвердить. Ничего не отмечал — честно пишет «виртуально».</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Стоп -->
+  <section class="feature reveal" id="stop" data-auto>
+    <span class="num">05 · СТОП С ОБЪЯСНЕНИЕМ</span>
+    <h2>Почему не сработало — в одной строке</h2>
+    <div class="seg" role="group" aria-label="Было или стало" data-state="after"><span class="pill"></span>
+      <button type="button" data-show="before" aria-pressed="false">Было</button><button type="button" data-show="after" aria-pressed="true">Стало</button></div>
+    <div class="stage">
+      <div class="pane" data-pane="before">
+        <div class="phone"><div class="msg"><p>❌ <b>Стоп</b></p><p>BTCUSDT лонг · сигнал · №1</p><p>97250.0 → 96400.0 −1.08R</p><p>20.11 20:49 → 21.11 03:49</p></div></div>
+        <p class="verdict"><span class="tag b">БЫЛО</span>Результат в R, без причины, без сравнения с другими версиями.</p>
+      </div>
+      <div class="pane" data-pane="after">
+        <div class="phone">
+          <div class="msg"><div class="quote">🟢 BTCUSDT · ЛОНГ · №1 · Вход: 59852.5</div><p>❌ <b>BTCUSDT</b> · №1 · Стоп</p><p><b class="bad">−1.48 USDT</b> · 7 ч</p><p>Цена прошла 80% пути к тейку и развернулась.</p><p>Проверь, что позиция на бирже закрыта.</p></div>
+          <div class="kb"><div class="row"><button type="button" id="openReview">📊 Разбор сделки</button></div></div>
+          <div id="reviewSlot"></div>
+        </div>
+        <p class="verdict"><span class="tag a">СТАЛО</span>Деньги, время, причина. Подробности — по кнопке «Разбор»: факты отдельно, версии кода и Claude рядом.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Итог дня -->
+  <section class="feature reveal" id="daily" data-auto>
+    <span class="num">06 · УТРО В 09:00</span>
+    <h2>«Жив» → итог дня и риск</h2>
+    <div class="seg" role="group" aria-label="Было или стало" data-state="after"><span class="pill"></span>
+      <button type="button" data-show="before" aria-pressed="false">Было</button><button type="button" data-show="after" aria-pressed="true">Стало</button></div>
+    <div class="stage">
+      <div class="pane" data-pane="before">
+        <div class="phone"><div class="msg"><p>✅ Жив. За сутки: 96 сканов, 2 сигнала.</p></div></div>
+        <p class="verdict"><span class="tag b">БЫЛО</span>Бот работает — и всё. Сколько заработали, неизвестно.</p>
+      </div>
+      <div class="pane" data-pane="after">
+        <div class="phone"><div class="msg">
+          <p>📊 <b>Итог суток · 21.11</b></p><p><b class="ok">+3.74 USDT</b> · все сигналы бота, виртуально</p>
+          <p>✅ 1 тейк · ❌ 1 стоп</p><p>📂 в сделке 1 · ⚪ отменено 1</p><p>Риск открытых: −1.63 USDT (1.1% депо)</p>
+          <p>🙋 Ваши сделки: 1 · −1.48 USDT (по размеру бота)</p><p>🟢 Бот работает · 96 сканов · 3 сигнала</p>
+        </div></div>
+        <p class="verdict"><span class="tag a">СТАЛО</span>Итог за день, сколько потеряем, если всё уйдёт в стоп, и отдельно — твои реальные сделки.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. График -->
+  <section class="feature reveal" id="chart" data-auto>
+    <span class="num">07 · ГРАФИК ДЛЯ ТЕЛЕФОНА</span>
+    <h2>Читается без увеличения</h2>
+    <div class="seg" role="group" aria-label="Было или стало" data-state="after"><span class="pill"></span>
+      <button type="button" data-show="before" aria-pressed="false">Было</button><button type="button" data-show="after" aria-pressed="true">Стало</button></div>
+    <div class="stage">
+      <div class="pane" data-pane="before">
+        <div class="phone"><div class="chart" style="height:190px;margin:0;border-radius:14px" data-chart="before"></div></div>
+        <p class="verdict"><span class="tag b">БЫЛО</span>Мелкие подписи на шкале, цена «0.0494984» не как в тексте, «Тренд: рост» без таймфрейма.</p>
+      </div>
+      <div class="pane" data-pane="after">
+        <div class="phone"><div class="chart" style="height:190px;margin:0;border-radius:14px" data-chart="after"></div></div>
+        <p class="verdict"><span class="tag a">СТАЛО</span>Крупные подписи справа, цены как в сообщении, «Тренд 4ч», легенда EMA, бледные зоны.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. По рынку -->
+  <section class="feature reveal" id="market">
+    <span class="num">08 · ЛИМИТКА ИЛИ ПО РЫНКУ</span>
+    <h2>Второй вход теперь тоже считается</h2>
+    <div class="compare">
+      <div class="card"><span class="tag b" style="justify-self:start">БЫЛО</span><h3>Предлагался, но…</h3><p>Вход «по рынку» был в сообщении, а его исход никто не считал. Сравнить с лимиткой было нечем.</p></div>
+      <div class="card hot"><span class="tag a" style="justify-self:start">СТАЛО</span><h3>⚖️ В отчёте</h3><p>Исход считается сам, с комиссией тейкера. Сравнение на одних сигналах; не исполнилась лимитка — 0R.</p></div>
+    </div>
+  </section>
+
+  <!-- 9. Честные цифры -->
+  <section class="feature reveal" id="honest">
+    <span class="num">09 · ЧЕСТНЫЕ ЦИФРЫ</span>
+    <h2>«Есть ли преимущество?» — ответ прямо</h2>
+    <p class="why">Было: среднее «+0.03R» на 487 сделках выглядело как плюс. Стало: отчёт показывает интервал и вывод.</p>
+    <div class="ci" id="ci" role="img" aria-label="Интервал бэктеста задевает ноль, доказанный интервал целиком выше нуля">
+      <div class="zero"></div><div class="bar b1"></div><div class="bar b2"></div>
+      <span class="lbl" style="left:8px;top:22px;color:var(--amber)">бэктест</span>
+      <span class="lbl" style="left:8px;top:62px;color:var(--blue)">доказано</span>
+      <span class="lbl" style="left:calc(50% - 10px);bottom:6px">0R</span>
+    </div>
+    <div class="compare">
+      <div class="card"><h3 style="color:var(--amber)">Не доказано</h3><p>Интервал ≈ ±0.1R задевает ноль</p></div>
+      <div class="card hot"><h3 style="color:var(--blue)">Правило</h3><p>Доказано, только если весь 90%-интервал выше нуля</p></div>
+    </div>
+  </section>
+
+  <!-- 10. Надёжность -->
+  <section class="feature reveal" id="reliable">
+    <span class="num">10 · НАДЁЖНОСТЬ И БЕЗОПАСНОСТЬ</span>
+    <h2>То, что держалось на честном слове</h2>
+    <div class="pipe" id="pipe" aria-label="Путь каждого изменения">
+      <div class="st"><b>⬆️</b>push</div><div class="st"><b>🧹</b>ruff</div><div class="st"><b>🧪</b>165 тестов</div><div class="st"><b>✅</b>main</div>
+    </div>
+    <div class="compare">
+      <div class="card"><h3>💾 Бэкап</h3><p>Было: журнал только на сервере. Стало: копия каждый час, проверка восстановления, копия на ПК.</p></div>
+      <div class="card"><h3>🔐 Claude Code</h3><p>Было: команды на сервер из Telegram. Стало: переключатель full / readonly / off.</p></div>
+      <div class="card"><h3>🧪 Тестовый бот</h3><p>Было: смотрели только на боевом. Стало: превью всех сообщений и кнопок.</p></div>
+      <div class="card"><h3>↩️ Откат</h3><p>Каждая фича — своя ветка: <code style="font-family:var(--mono);font-size:12px">git revert -m 1</code></p></div>
+    </div>
+  </section>
+
+  <!-- 11. Обучение -->
+  <section class="feature reveal" id="learning">
+    <span class="num">11 · СИСТЕМА ОБУЧЕНИЯ</span>
+    <h2>Учится на проверенных уроках</h2>
+    <p class="why">Было: никак. Стало: путь от ошибки к проверенному правилу. Одна сделка — не урок.</p>
+    <div class="path"><span class="dot" aria-hidden="true"></span>
+      <div class="card hot"><h3>1 · Уроки недели</h3><p>Аудитор по средам ищет повторяющиеся ошибки, до 3 гипотез. Готово.</p></div>
+      <div class="card"><h3>2 · Разбор стопа</h3><p>Claude коротко пишет, что упустил. После 25.11.</p></div>
+      <div class="card"><h3>3 · Теневой Claude</h3><p>«Claude с уроками» работает тихо и сравнивается с кодом.</p></div>
+      <div class="card"><h3>4 · Замена</h3><p>Только решением владельца, если лучше на новых данных.</p></div>
+    </div>
+  </section>
+
+  <section class="cta reveal">
+    <h2>Чтобы всё заработало</h2>
+    <ol>
+      <li>Открыть Claude Code и вставить <code>docs/FOR_FRIEND_CLAUDE.md</code></li>
+      <li>Согласовать 5 решений — Claude спросит сам</li>
+      <li><code>ops/deploy.sh</code> — выкатить на сервер</li>
+      <li>Включить бэкап и режим <code>readonly</code></li>
+    </ol>
+  </section>
+  <footer>Цифры в примерах — из тестового бота на выдуманных сделках.</footer>
+</main>
+
+<script>
+(() => {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const wait = ms => new Promise(r => setTimeout(r, reduce ? 0 : ms));
+
+  /* прогресс прокрутки */
+  const bar = document.getElementById("progress");
+  const onScroll = () => {
+    const h = document.documentElement.scrollHeight - innerHeight;
+    bar.style.transform = `scaleX(${h > 0 ? Math.min(1, scrollY / h) : 0})`;
+  };
+  addEventListener("scroll", onScroll, { passive: true }); onScroll();
+
+  /* счётчики */
+  const countUp = el => {
+    const to = +el.dataset.count, from = to > 50 ? Math.round(to * 0.6) : 0, t0 = performance.now(), d = 1200;
+    if (reduce || to === 0) { el.textContent = to; return; }
+    const step = now => { const k = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = Math.round(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  };
+  document.querySelectorAll("[data-count]").forEach(countUp);
+
+  /* переключатель Было / Стало: плавное перетекание (View Transitions, где есть) */
+  const show = (seg, which, animate = true) => {
+    const stage = seg.nextElementSibling;
+    if (seg.dataset.state === which) return;
+    const apply = () => {
+      seg.dataset.state = which;
+      seg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.show === which)));
+      stage.querySelectorAll(".pane").forEach(p => {
+        const on = p.dataset.pane === which; p.hidden = !on; p.classList.remove("enter");
+        if (on && animate && !reduce) { void p.offsetWidth; p.classList.add("enter");
+          const ph = p.querySelector(".phone"); if (ph && which === "after") { ph.classList.remove("glow"); void ph.offsetWidth; ph.classList.add("glow"); } }
+      });
+    };
+    if (animate && !reduce && document.startViewTransition) document.startViewTransition(apply); else apply();
+  };
+  document.querySelectorAll(".seg").forEach(seg => seg.addEventListener("click", e => {
+    const b = e.target.closest("button[data-show]"); if (b) show(seg, b.dataset.show);
+  }));
+
+  document.querySelectorAll(".seg").forEach(seg => seg.nextElementSibling.querySelector('[data-pane="before"]').hidden = true);
+
+  /* мини-графики (SVG по сгенерированным свечам) */
+  const mkChart = (el, kind) => {
+    const W = 360, H = el.clientHeight || 92, n = 36, big = kind !== "short" || true;
+    let p = 100, s = "";
+    const seed = kind === "short" ? 7 : 3; let r = seed;
+    const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280;
+    const cs = []; for (let i = 0; i < n; i++) { const o = p; p += (rnd() - (kind === "short" ? .55 : .45)) * 3; cs.push([o, p]); }
+    const all = cs.flat(), mn = Math.min(...all) - 4, mx = Math.max(...all) + 4;
+    const plotW = kind === "before" ? W - 34 : W - 110, y = v => 10 + (H - 24) * (1 - (v - mn) / (mx - mn));
+    cs.forEach(([o, c], i) => { const x = 8 + i * (plotW - 8) / n, up = c >= o, col = up ? "#27C28A" : "#FF6B6B";
+      s += `<rect x="${x}" y="${Math.min(y(o), y(c))}" width="${(plotW - 8) / n * .6}" height="${Math.max(1.5, Math.abs(y(o) - y(c)))}" fill="${col}" rx="1"/>`; });
+    const last = cs[n - 1][1], long = kind !== "short";
+    const e = last, st = long ? last - 6 : last + 6, tp = long ? last + 9 : last - 9;
+    const x0 = 8 + (n - 3) * (plotW - 8) / n, x1 = plotW + 4;
+    const zone = (a, b, col, op) => `<rect x="${x0}" y="${Math.min(y(a), y(b))}" width="${x1 - x0}" height="${Math.abs(y(a) - y(b))}" fill="${col}" opacity="${op}"/>`;
+    const fs = kind === "before" ? 7 : 11, fw = kind === "before" ? 400 : 700;
+    const tag = (v, col, txt) => kind === "before"
+      ? `<rect x="${x1 - 2}" y="${y(v) - 6}" width="58" height="12" rx="2" fill="${col}"/><text x="${x1 + 1}" y="${y(v) + 3}" font-size="${fs}" fill="#0B1220" font-family="Inter,sans-serif">${txt}</text>`
+      : `<rect x="${x1 + 2}" y="${y(v) - 9}" width="100" height="18" rx="4" fill="${col}"/><text x="${x1 + 7}" y="${y(v) + 4}" font-size="${fs}" font-weight="${fw}" fill="#0B1220" font-family="Inter,sans-serif">${txt}</text>`;
+    const fmt = kind === "before" ? (v => (v / 1000).toPrecision(6)) : (v => (v / 1000).toFixed(4));
+    s += zone(e, tp, "#27C28A", kind === "before" ? .2 : .1) + zone(e, st, "#FF6B6B", kind === "before" ? .2 : .1);
+    [[tp, "#27C28A"], [e, "#EAF0F8"], [st, "#FF6B6B"]].forEach(([v, c]) => s += `<line x1="${x0}" x2="${x1}" y1="${y(v)}" y2="${y(v)}" stroke="${c}" stroke-width="${kind === "before" ? 1 : 2}"/>`);
+    if (kind !== "short") {
+      s += tag(tp, "#27C28A", `Тейк ${fmt(tp)}`) + tag(e, "#EAF0F8", `Вход ${fmt(e)}`) + tag(st, "#FF6B6B", `Стоп ${fmt(st)}`);
+      s += kind === "before"
+        ? `<text x="10" y="14" font-size="8" fill="#27C28A" font-family="Inter,sans-serif">Тренд: рост</text>`
+        : `<text x="10" y="18" font-size="12" font-weight="700" fill="#27C28A" font-family="Inter,sans-serif">Тренд 4ч: рост</text><text x="10" y="${H - 6}" font-size="10" fill="#5AA9FF" font-family="Inter,sans-serif">━ EMA20</text><text x="64" y="${H - 6}" font-size="10" fill="#9aa0b4" font-family="Inter,sans-serif">━ EMA50</text>`;
+    }
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${s}</svg>`;
+  };
+  const drawCharts = () => document.querySelectorAll("[data-chart]").forEach(el => { if (!el.closest("[hidden]")) mkChart(el, el.dataset.chart); });
+  drawCharts();
+  document.querySelectorAll(".seg").forEach(seg => seg.addEventListener("click", () => setTimeout(drawCharts, 30)));
+
+  /* цепочка ответов — проигрывается сама */
+  const threadBox = document.getElementById("threadBox");
+  const CARD = "🟢 BTCUSDT · ЛОНГ · №1 · Вход: 59852.5";
+  const threadMsgs = [
+    `<p><b>🟢 BTCUSDT · ЛОНГ · №1</b></p><p>Вход: <code>59852.5</code></p><p>Тейк: <code>60660.5</code> · <span class="ok">+2.03 USDT</span></p><p>Стоп: <code>59313.8</code> · <span class="bad">−1.56 USDT</span></p>`,
+    `<div class="quote">${CARD}</div><p>🔵 <b>BTCUSDT</b> · №1</p><p>Цена достигла входа <code>59852.5</code>.</p><p>Вы уже в сделке.</p>`,
+    `<div class="quote">${CARD}</div><p>❌ <b>BTCUSDT</b> · №1 · Стоп</p><p><b class="bad">−1.48 USDT</b> · 7 ч</p><p>Цена прошла 80% пути к тейку и развернулась.</p>`,
+    `<div class="quote">${CARD}</div><p>📊 <b>Разбор · BTCUSDT лонг · №1</b></p><p class="dim">Факты · версии кода и Claude · твоё действие</p>`
+  ];
+  let threadRun = 0;
+  const playThread = async () => {
+    const id = ++threadRun; threadBox.innerHTML = "";
+    for (const html of threadMsgs) {
+      const t = document.createElement("div"); t.className = "typing"; t.innerHTML = "<i></i><i></i><i></i>";
+      threadBox.append(t); await wait(650); if (id !== threadRun) return; t.remove();
+      const m = document.createElement("div"); m.className = "msg pop"; m.innerHTML = html; threadBox.append(m); await wait(500);
+    }
+  };
+  threadBox.innerHTML = threadMsgs.map(h => `<div class="msg">${h}</div>`).join("");   // в покое — вся цепочка
+  document.getElementById("replayThread").addEventListener("click", playThread);
+
+  /* живая демка кнопок — те же состояния, что в боте */
+  const demo = document.getElementById("demo");
+  const CAPTION = `<div class="chart" data-chart="long"></div><p><b>🟢 BTCUSDT · ЛОНГ · №1</b></p><p>Вход: <code>59852.5</code></p><p>Тейк: <code>60660.5</code> · <span class="ok">+2.03 USDT</span></p><p>Стоп: <code>59313.8</code> · <span class="bad">−1.56 USDT</span></p><p>Маржа 30 USDT · 5×</p><p>⏱ Лимитка до 21.11 23:33 (Киев)</p>`;
+  const LINES = { limit: "⏳ Лимитка отмечена", filled: "✅ Вы в сделке (лимитка)", cancelled: "🚫 Лимитка отменена",
+                  market: "⚡ Вы в сделке по рынку", skip: "🚫 Вы пропустили сигнал" };
+  const KB = { null: [[["limit", "📥 Поставил лимитку"], ["market", "⚡ Вошёл по рынку"]], [["skip", "🚫 Пропустил"]]],
+               limit: [[["filled", "✅ Исполнилась"], ["cancelled", "🚫 Отменил"]]], market: [[["price", "✏️ Указать цену входа"], ["undo", "↩️ Изменить отметку"]]] };
+  const TOAST = { limit: "Записал: лимитка поставлена. Ордеров бот не отправляет.", filled: "Записал: вы в сделке.",
+                  cancelled: "Записал: лимитка отменена.", market: "Записал: вы вошли по рынку.", skip: "Записал: сигнал пропущен.",
+                  undo: "Отметка снята.", price: "Цена записана: 59901.0" };
+  let state = null, price = null;
+  const renderDemo = (toast, extra = "") => {
+    const line = state ? `<p class="state pop">${LINES[state]}${state === "market" && price ? ` · вход <code>${price}</code>` : ""}</p>` : "";
+    const rows = (KB[state] || [[["undo", "↩️ Изменить отметку"]]]).map(r => `<div class="row">${r.map(([a, t]) => `<button type="button" data-a="${a}">${t}</button>`).join("")}</div>`).join("");
+    demo.innerHTML = `<div class="msg">${CAPTION}${line}</div><div class="kb">${rows}</div>${extra}${toast ? `<div class="toast">${toast}</div>` : ""}`;
+    demo.querySelectorAll("[data-chart]").forEach(el => mkChart(el, "after"));
+  };
+  demo.addEventListener("click", e => {
+    const b = e.target.closest("button[data-a]"); if (!b) return;
+    const a = b.dataset.a;
+    if (a === "undo") { state = null; price = null; }
+    else if (a === "price") { price = "59901.0"; }
+    else state = a;
+    let extra = "";
+    if (a === "limit") extra = `<div class="msg pop"><div class="quote">🟢 BTCUSDT · ЛОНГ · №1</div><p>🔵 <b>BTCUSDT</b> · №1</p><p>Цена достигла входа <code>59852.5</code>.</p><p>Подтверди исполнение заявки на бирже.</p></div>`;
+    if (a === "price") extra = `<div class="msg pop"><p>Записал вход по №1: <code>59901.0</code>. До стопа 1.0% цены.</p></div>`;
+    const go = () => renderDemo(TOAST[a], extra);
+    if (!reduce && document.startViewTransition) document.startViewTransition(go); else go();
+  });
+  document.getElementById("resetDemo").addEventListener("click", () => { state = null; price = null; renderDemo(); });
+  renderDemo();
+
+  /* разбор по кнопке */
+  document.getElementById("openReview").addEventListener("click", () => {
+    document.getElementById("reviewSlot").innerHTML = `<div class="msg pop"><p>📊 <b>Разбор · BTCUSDT лонг · №1</b></p>
+      <p class="dim">Факты</p><p>• Итог: −1.48 USDT (−1.10R) · 7 ч · стоп</p><p>• Лучший момент +1.1% · худший −0.9%</p><p>• Тейк был на 1.50R, прошли 80% пути</p>
+      <p class="dim">Версии на этой сделке</p><p>• Claude с подсказкой (выдана): ❌ −1.10R</p><p>• Исходный алгоритм: ✅ +1.41R</p><p>• Claude без подсказки: пропустил бы</p></div>`;
+  });
+
+  /* CI-конвейер: огоньки бегут по шагам */
+  const pipe = [...document.querySelectorAll("#pipe .st")];
+  const runPipe = async () => { for (;;) { for (const s of pipe) { s.classList.add("on"); await wait(450); } await wait(1400); pipe.forEach(s => s.classList.remove("on")); await wait(500); if (reduce) { pipe.forEach(s => s.classList.add("on")); return; } } };
+
+  /* появление при прокрутке + автопоказ «было → стало» один раз */
+  const seen = new WeakSet();
+  const io = new IntersectionObserver(entries => entries.forEach(en => {
+    if (!en.isIntersecting || seen.has(en.target)) return;
+    const el = en.target; seen.add(el);
+    if (!reduce) el.classList.add("go");
+    if (el.matches("[data-auto]") && !reduce) {
+      const seg = el.querySelector(".seg"); show(seg, "before", false); drawCharts();
+      setTimeout(() => { show(seg, "after"); setTimeout(drawCharts, 40); }, 1300);
+    }
+    if (el.id === "thread") playThread();
+    if (el.id === "honest") document.getElementById("ci").classList.add("play");
+    if (el.id === "reliable") runPipe();
+  }), { threshold: 0.25 });
+  document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+})();
+</script>
+
+</body>
+</html>

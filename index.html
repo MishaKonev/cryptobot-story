@@ -454,7 +454,11 @@ footer { color: var(--muted); font-size: 12.5px; text-align: center; padding-bot
   document.querySelectorAll("[data-count]").forEach(countUp);
 
   /* переключатель Было / Стало: плавное перетекание (View Transitions, где есть) */
-  const show = (seg, which, animate = true) => {
+  const vt = fn => {                               // плавное перетекание; прерванный переход — не ошибка
+    if (reduce || !document.startViewTransition) return fn();
+    const t = document.startViewTransition(fn); t.finished.catch(() => {}); t.ready.catch(() => {}); t.updateCallbackDone.catch(() => {});
+  };
+  const show = (seg, which, animate = true, morph = false) => {
     const stage = seg.nextElementSibling;
     if (seg.dataset.state === which) return;
     const apply = () => {
@@ -466,10 +470,10 @@ footer { color: var(--muted); font-size: 12.5px; text-align: center; padding-bot
           const ph = p.querySelector(".phone"); if (ph && which === "after") { ph.classList.remove("glow"); void ph.offsetWidth; ph.classList.add("glow"); } }
       });
     };
-    if (animate && !reduce && document.startViewTransition) document.startViewTransition(apply); else apply();
+    if (animate && morph) vt(apply); else apply();      // авто-показ — своей анимацией, без общего перехода
   };
   document.querySelectorAll(".seg").forEach(seg => seg.addEventListener("click", e => {
-    const b = e.target.closest("button[data-show]"); if (b) show(seg, b.dataset.show);
+    const b = e.target.closest("button[data-show]"); if (b) show(seg, b.dataset.show, true, true);
   }));
 
   document.querySelectorAll(".seg").forEach(seg => seg.nextElementSibling.querySelector('[data-pane="before"]').hidden = true);
@@ -556,7 +560,7 @@ footer { color: var(--muted); font-size: 12.5px; text-align: center; padding-bot
     if (a === "limit") extra = `<div class="msg pop"><div class="quote">🟢 BTCUSDT · ЛОНГ · №1</div><p>🔵 <b>BTCUSDT</b> · №1</p><p>Цена достигла входа <code>59852.5</code>.</p><p>Подтверди исполнение заявки на бирже.</p></div>`;
     if (a === "price") extra = `<div class="msg pop"><p>Записал вход по №1: <code>59901.0</code>. До стопа 1.0% цены.</p></div>`;
     const go = () => renderDemo(TOAST[a], extra);
-    if (!reduce && document.startViewTransition) document.startViewTransition(go); else go();
+    vt(go);
   });
   document.getElementById("resetDemo").addEventListener("click", () => { state = null; price = null; renderDemo(); });
   renderDemo();

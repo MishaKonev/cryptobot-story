@@ -485,7 +485,8 @@ footer { color: var(--muted); font-size: 12.5px; text-align: center; padding-bot
     const seed = kind === "short" ? 7 : 3; let r = seed;
     const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280;
     const cs = []; for (let i = 0; i < n; i++) { const o = p; p += (rnd() - (kind === "short" ? .55 : .45)) * 3; cs.push([o, p]); }
-    const all = cs.flat(), mn = Math.min(...all) - 4, mx = Math.max(...all) + 4;
+    const lp = cs[n - 1][1], lg = kind !== "short";          // тейк и стоп всегда внутри графика
+    const all = [...cs.flat(), lp + (lg ? 9 : -9), lp + (lg ? -6 : 6)], mn = Math.min(...all) - 2, mx = Math.max(...all) + 2;
     const plotW = kind === "before" ? W - 34 : W - 110, y = v => 16 + (H - 34) * (1 - (v - mn) / (mx - mn));
     cs.forEach(([o, c], i) => { const x = 8 + i * (plotW - 8) / n, up = c >= o, col = up ? "#27C28A" : "#FF6B6B";
       s += `<rect x="${x}" y="${Math.min(y(o), y(c))}" width="${(plotW - 8) / n * .6}" height="${Math.max(1.5, Math.abs(y(o) - y(c)))}" fill="${col}" rx="1"/>`; });

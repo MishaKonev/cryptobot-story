@@ -216,7 +216,7 @@ footer { color: var(--muted); font-size: 12.5px; text-align: center; padding-bot
     </svg>
     <div class="stats">
       <div class="stat"><b data-count="22">22</b><span>доработки, каждая в своей ветке</span></div>
-      <div class="stat"><b><span data-count="105">105</span>→<span data-count="165">165</span></b><span>тестов, CI на каждый push</span></div>
+      <div class="stat"><b data-count="165">165</b><span>тестов (было 105), CI на каждый push</span></div>
       <div class="stat warm"><b data-count="0">0</b><span>изменений в торговой логике</span></div>
     </div>
     <nav class="toc" aria-label="Пункты">
@@ -482,7 +482,7 @@ footer { color: var(--muted); font-size: 12.5px; text-align: center; padding-bot
     const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280;
     const cs = []; for (let i = 0; i < n; i++) { const o = p; p += (rnd() - (kind === "short" ? .55 : .45)) * 3; cs.push([o, p]); }
     const all = cs.flat(), mn = Math.min(...all) - 4, mx = Math.max(...all) + 4;
-    const plotW = kind === "before" ? W - 34 : W - 110, y = v => 10 + (H - 24) * (1 - (v - mn) / (mx - mn));
+    const plotW = kind === "before" ? W - 34 : W - 110, y = v => 16 + (H - 34) * (1 - (v - mn) / (mx - mn));
     cs.forEach(([o, c], i) => { const x = 8 + i * (plotW - 8) / n, up = c >= o, col = up ? "#27C28A" : "#FF6B6B";
       s += `<rect x="${x}" y="${Math.min(y(o), y(c))}" width="${(plotW - 8) / n * .6}" height="${Math.max(1.5, Math.abs(y(o) - y(c)))}" fill="${col}" rx="1"/>`; });
     const last = cs[n - 1][1], long = kind !== "short";
@@ -491,13 +491,13 @@ footer { color: var(--muted); font-size: 12.5px; text-align: center; padding-bot
     const zone = (a, b, col, op) => `<rect x="${x0}" y="${Math.min(y(a), y(b))}" width="${x1 - x0}" height="${Math.abs(y(a) - y(b))}" fill="${col}" opacity="${op}"/>`;
     const fs = kind === "before" ? 7 : 11, fw = kind === "before" ? 400 : 700;
     const tag = (v, col, txt) => kind === "before"
-      ? `<rect x="${x1 - 2}" y="${y(v) - 6}" width="58" height="12" rx="2" fill="${col}"/><text x="${x1 + 1}" y="${y(v) + 3}" font-size="${fs}" fill="#0B1220" font-family="Inter,sans-serif">${txt}</text>`
+      ? `<rect x="${x1 - 64}" y="${y(v) - 6}" width="62" height="12" rx="2" fill="${col}"/><text x="${x1 - 61}" y="${y(v) + 3}" font-size="${fs}" fill="#0B1220" font-family="Inter,sans-serif">${txt}</text>`
       : `<rect x="${x1 + 2}" y="${y(v) - 9}" width="100" height="18" rx="4" fill="${col}"/><text x="${x1 + 7}" y="${y(v) + 4}" font-size="${fs}" font-weight="${fw}" fill="#0B1220" font-family="Inter,sans-serif">${txt}</text>`;
-    const fmt = kind === "before" ? (v => (v / 1000).toPrecision(6)) : (v => (v / 1000).toFixed(4));
+    const L = kind === "before" ? ["60660.4878", "59852.4932", "59313.8114"] : ["60660.5", "59852.5", "59313.8"];  // как в карточке
     s += zone(e, tp, "#27C28A", kind === "before" ? .2 : .1) + zone(e, st, "#FF6B6B", kind === "before" ? .2 : .1);
     [[tp, "#27C28A"], [e, "#EAF0F8"], [st, "#FF6B6B"]].forEach(([v, c]) => s += `<line x1="${x0}" x2="${x1}" y1="${y(v)}" y2="${y(v)}" stroke="${c}" stroke-width="${kind === "before" ? 1 : 2}"/>`);
     if (kind !== "short") {
-      s += tag(tp, "#27C28A", `Тейк ${fmt(tp)}`) + tag(e, "#EAF0F8", `Вход ${fmt(e)}`) + tag(st, "#FF6B6B", `Стоп ${fmt(st)}`);
+      s += tag(tp, "#27C28A", `Тейк ${L[0]}`) + tag(e, "#EAF0F8", `Вход ${L[1]}`) + tag(st, "#FF6B6B", `Стоп ${L[2]}`);
       s += kind === "before"
         ? `<text x="10" y="14" font-size="8" fill="#27C28A" font-family="Inter,sans-serif">Тренд: рост</text>`
         : `<text x="10" y="18" font-size="12" font-weight="700" fill="#27C28A" font-family="Inter,sans-serif">Тренд 4ч: рост</text><text x="10" y="${H - 6}" font-size="10" fill="#5AA9FF" font-family="Inter,sans-serif">━ EMA20</text><text x="64" y="${H - 6}" font-size="10" fill="#9aa0b4" font-family="Inter,sans-serif">━ EMA50</text>`;
